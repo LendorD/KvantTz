@@ -15,7 +15,6 @@ import (
 func main() {
 	repository.InitDB()
 	err := godotenv.Load(".env")
-	err = repository.DB.AutoMigrate()
 	if err != nil {
 		log.Fatal("Ошибка загрузки ENV")
 	}
