@@ -4,66 +4,65 @@ import (
 	"KvantTZ/internal/handlers"
 	"KvantTZ/internal/middleware"
 	"KvantTZ/internal/repository"
+	"KvantTZ/internal/services"
+	"KvantTZ/migrations"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
-	"os/exec"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	repository.InitDB()
-	err := godotenv.Load(".env")
+	db, err := repository.InitDB()
 	if err != nil {
-		log.Fatal("Ошибка загрузки ENV")
+		log.Fatal(err.Error())
 	}
-	err = runMigrations()
+	//err := runMigrations()
+	err = migrations.Migrate(db)
 	if err != nil {
-		log.Fatal("Ошибка миграций: ", err)
+		log.Fatal("Ошибка миграций: ", err.Error())
 	}
+	err = godotenv.Load()
+
+	// Репозитории
+	userRepo := repository.NewUserRepository(db)
+	orderRepo := repository.NewOrderRepository(db)
+
+	// Сервисы
+	userService := services.NewUserService(userRepo)
+	orderService := services.NewOrderService(orderRepo, userRepo)
+	authService := services.NewAuthService(userRepo)
+
+	// Хендлеры
+	userHandler := handlers.NewUserHandler(userService)
+	orderHandler := handlers.NewOrderHandler(orderService)
+	authHandler := handlers.NewAuthHandler(authService)
 
 	router := gin.Default()
 
 	// Public routes
-	router.POST("/auth/login", handlers.Login)
-	router.POST("/users", handlers.CreateUser)
+	router.POST("/auth/login", authHandler.Login)
+	router.POST("/users", userHandler.CreateUser)
 
 	// Protected routes
 	authGroup := router.Group("/")
 	authGroup.Use(middleware.JWTAuth())
 	{
 
-		authGroup.GET("/users", handlers.GetUsers)
-		authGroup.GET("/users/:id", handlers.GetUserByID)
-		authGroup.PUT("/users/:id", handlers.UpdateUser)
-		authGroup.DELETE("/users/:id", handlers.DeleteUser)
+		authGroup.GET("/users", userHandler.GetAllUsers)
+		authGroup.GET("/users/:id", userHandler.GetUserByID)
+		authGroup.PUT("/users/:id", userHandler.UpdateUser)
+		authGroup.DELETE("/users/:id", userHandler.DeleteUser)
 
-		authGroup.POST("/users/:id/orders", handlers.CreateOrder)
-		authGroup.GET("/users/:id/orders", handlers.GetOrders)
+		authGroup.POST("/users/:id/orders", orderHandler.CreateOrder)
+		authGroup.GET("/users/:id/orders", orderHandler.GetOrders)
 
 	}
 
-	router.Run(":8080")
-}
-
-func runMigrations() error {
-	// Команда для применения миграций через psql
-	cmd := exec.Command("psql",
-		"-h", os.Getenv("DB_HOST"),
-		"-U", os.Getenv("DB_USER"),
-		"-d", os.Getenv("DB_NAME"),
-		"-f", "/app/migrations/001_create_tables.sql",
-	)
-
-	// Установка пароля
-	cmd.Env = append(os.Environ(), "PGPASSWORD="+os.Getenv("DB_PASSWORD"))
-
-	// Запуск
-	if output, err := cmd.CombinedOutput(); err != nil {
-		log.Println("Вывод команды: ", string(output))
-		return err
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
 	}
 
-	return nil
+	router.Run(":" + port)
 }

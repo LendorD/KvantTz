@@ -2,25 +2,30 @@ package repository
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// глобальная перемення подключения к БД
-var DB *gorm.DB
+var db *gorm.DB
 
-func InitDB() {
-	//Загрузка данных из .env
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+// InitDB инициализирует и возвращает соединение с базой данных
+func InitDB() (*gorm.DB, error) {
+	// Загрузка .env файла (игнорируем ошибку, если файла нет)
+	_ = godotenv.Load()
+
+	// Валидация обязательных переменных окружения
+	requiredEnv := []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"}
+	for _, env := range requiredEnv {
+		if os.Getenv(env) == "" {
+			return nil, fmt.Errorf("missing required environment variable: %s", env)
+		}
 	}
 
-	//Формироание строки подклчюения (data source name)
+	// Формирование DSN
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
@@ -29,11 +34,26 @@ func InitDB() {
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
 	)
-	//Подключение к БД   gorm.Config - доп опции
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	// Подключение к БД
+	var err error
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		PrepareStmt:                              true,
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
-	DB = db
+	// Настройка пула соединений
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("database pool configuration failed: %w", err)
+	}
+
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	return db, nil
 }
