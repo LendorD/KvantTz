@@ -1,41 +1,41 @@
 package services
 
 import (
-	"KvantTZ/internal/utils"
-	"errors"
-
 	"KvantTZ/internal/models"
 	"KvantTZ/internal/repository"
+	"KvantTZ/internal/utils"
+	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 )
 
-type UserService struct {
+type userService struct {
 	userRepo repository.UserRepository
 }
 
-func NewUserService(userRepo repository.UserRepository) *UserService {
-	return &UserService{userRepo: userRepo}
+func NewUserService(userRepo repository.UserRepository) UserService {
+	return &userService{userRepo: userRepo}
 }
 
 // Создание нового пользователя
-func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.UserResponse, error) {
-	// Проверка уникальности email
-	existingUser, err := s.userRepo.FindByEmail(req.Email)
-	if existingUser == nil {
-		return nil, errors.New("email already exists")
+func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserResponse, error) {
+	err := utils.ValidateCreateRequest(req)
+	if err != nil {
+		return nil, errors.New(err.Error())
 	}
+	_, err = s.userRepo.FindByEmail(req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
-
-	if !utils.ValidateAge(req.Age, 0, 150) {
-		return nil, errors.New("invalid age")
+	//Если после поиска по email ошибки нет, значит email уже занят
+	if err == nil {
+		return nil, errors.New("email already exists")
 	}
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return nil, errors.New("error hashing password")
+		return nil, fmt.Errorf("error hashing password: %w", err)
 	}
 
 	// Создание объекта User из запроса
@@ -45,9 +45,9 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 		Age:          req.Age,
 		PasswordHash: hashedPassword,
 	}
-
-	if err := s.userRepo.Create(user); err != nil {
-		return nil, errors.New("ошибка при создании пользователя")
+	err = s.userRepo.Create(user)
+	if err != nil {
+		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
 	return &models.UserResponse{
@@ -59,7 +59,7 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 }
 
 // Получение всех пользователей с пагинацией и фильтрацией
-func (s *UserService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.UserResponse, int64, error) {
+func (s *userService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.UserResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -89,7 +89,7 @@ func (s *UserService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.Use
 }
 
 // Получение пользователя по ID
-func (s *UserService) GetUserByID(id int) (*models.UserResponse, error) {
+func (s *userService) GetUserByID(id int) (*models.UserResponse, error) {
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,10 @@ func (s *UserService) GetUserByID(id int) (*models.UserResponse, error) {
 }
 
 // Обновление пользователя
-func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) (*models.UserResponse, error) {
+func (s *userService) UpdateUser(id int, req *models.UpdateUserRequest) (*models.UserResponse, error) {
+	if !utils.IsValidEmail(req.Email) {
+		return nil, errors.New("invalid email")
+	}
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {
 		return nil, err
@@ -126,6 +129,8 @@ func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) (*models
 }
 
 // Удаление пользователя
-func (s *UserService) DeleteUser(id int) error {
+func (s *userService) DeleteUser(id int) error {
 	return s.userRepo.Delete(id)
 }
+
+var _ UserService = (*userService)(nil)

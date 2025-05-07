@@ -10,10 +10,10 @@ import (
 )
 
 type OrderHandler struct {
-	orderService *services.OrderService
+	orderService services.OrderService
 }
 
-func NewOrderHandler(orderService *services.OrderService) *OrderHandler {
+func NewOrderHandler(orderService services.OrderService) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
 	}
@@ -22,13 +22,13 @@ func NewOrderHandler(orderService *services.OrderService) *OrderHandler {
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный ID пользователя"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
 
 	var orderRequest models.OrderRequest
 	if err := c.ShouldBindJSON(&orderRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат данных"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order request"})
 		return
 	}
 
@@ -44,7 +44,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 func (h *OrderHandler) GetOrders(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Некорректный ID пользователя"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
 

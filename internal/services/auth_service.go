@@ -7,10 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuthService interface {
-	Login(email, password string) (string, error)
-}
-
 type authService struct {
 	userRepo repository.UserRepository
 }
@@ -39,3 +35,5 @@ func (s *authService) Login(email, password string) (string, error) {
 
 	return token, nil
 }
+
+var _ AuthService = (*authService)(nil)

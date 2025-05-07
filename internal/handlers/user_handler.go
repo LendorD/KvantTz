@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"KvantTZ/internal/utils"
 	"net/http"
 	"strconv"
 
@@ -11,10 +12,10 @@ import (
 )
 
 type UserHandler struct {
-	userService *services.UserService
+	userService services.UserService
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(userService services.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
@@ -37,14 +38,10 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 // GET /users
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	minAge, _ := strconv.Atoi(c.DefaultQuery("minAge", "0"))
-	maxAge, _ := strconv.Atoi(c.DefaultQuery("maxAge", "150"))
-
+	page, limit, minAge, maxAge := utils.ValidateListUsersParams(c)
 	users, total, err := h.userService.GetAllUsers(page, limit, minAge, maxAge)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "service error"})
 		return
 	}
 
@@ -105,9 +102,13 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 	err = h.userService.DeleteUser(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err.Error() == "not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
-	}
 
+	}
 	c.Status(http.StatusNoContent)
 }

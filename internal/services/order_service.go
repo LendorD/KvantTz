@@ -7,19 +7,19 @@ import (
 	"time"
 )
 
-type OrderService struct {
+type orderService struct {
 	orderRepo repository.OrderRepository
 	userRepo  repository.UserRepository
 }
 
-func NewOrderService(orderRepo repository.OrderRepository, userRepo repository.UserRepository) *OrderService {
-	return &OrderService{
+func NewOrderService(orderRepo repository.OrderRepository, userRepo repository.UserRepository) OrderService {
+	return &orderService{
 		orderRepo: orderRepo,
 		userRepo:  userRepo,
 	}
 }
 
-func (s *OrderService) CreateOrder(userID int, req models.OrderRequest) (*models.OrderResponse, error) {
+func (s *orderService) CreateOrder(userID int, req models.OrderRequest) (*models.OrderResponse, error) {
 	// Проверяем, существует ли пользователь
 	_, err := s.userRepo.FindByID(userID)
 	if err != nil {
@@ -54,11 +54,11 @@ func (s *OrderService) CreateOrder(userID int, req models.OrderRequest) (*models
 	return response, nil
 }
 
-func (s *OrderService) GetOrders(userID int) ([]models.OrderResponse, error) {
+func (s *orderService) GetOrders(userID int) ([]models.OrderResponse, error) {
 	// Проверяем, существует ли пользователь
 	_, err := s.userRepo.FindByID(userID)
 	if err != nil {
-		return nil, errors.New("пользователь не найден")
+		return nil, errors.New("user not found")
 	}
 
 	orders, err := s.orderRepo.GetByUserID(userID)
@@ -80,3 +80,5 @@ func (s *OrderService) GetOrders(userID int) ([]models.OrderResponse, error) {
 
 	return responses, nil
 }
+
+var _ OrderService = (*orderService)(nil)
