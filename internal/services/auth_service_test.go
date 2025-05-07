@@ -13,23 +13,19 @@ import (
 
 func TestAuthService_Login(t *testing.T) {
 	mockUserRepo := new(mocks.UserRepository)
-	service := services.NewAuthService(mockUserRepo)
+	service := services.NewAuthService(mockUserRepo, testLogger)
 
 	t.Run("Успешная авторизация", func(t *testing.T) {
-		// Генерируем хеш для валидного пароля
 		hashedPassword, _ := utils.HashPassword("valid_password")
 		mockUser := &models.User{
 			ID:           1,
 			PasswordHash: hashedPassword,
 		}
 
-		// Настраиваем мок (однократный вызов)
 		mockUserRepo.On("FindByEmail", "test@example.com").Return(mockUser, nil)
 
-		// Вызываем метод сервиса
 		token, err := service.Login("test@example.com", "valid_password")
 
-		// Проверки
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token)
 		mockUserRepo.AssertExpectations(t)
@@ -56,8 +52,4 @@ func TestAuthService_Login(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid password")
 	})
 
-	t.Run("Ошибка генерации токена", func(t *testing.T) {
-		// Тест требует мокирования utils.GenerateJWT, что сложнее.
-		// Рекомендуется использовать интерфейсы для утилит.
-	})
 }

@@ -16,7 +16,7 @@ import (
 func TestOrderService_CreateOrder(t *testing.T) {
 	mockOrderRepo := new(mocks.OrderRepository)
 	mockUserRepo := new(mocks.UserRepository)
-	service := services.NewOrderService(mockOrderRepo, mockUserRepo)
+	service := services.NewOrderService(mockOrderRepo, mockUserRepo, testLogger)
 
 	t.Run("Успешное создание заказа", func(t *testing.T) {
 		req := models.OrderRequest{
@@ -68,7 +68,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 func TestOrderService_GetOrders(t *testing.T) {
 	mockOrderRepo := new(mocks.OrderRepository)
 	mockUserRepo := new(mocks.UserRepository)
-	service := services.NewOrderService(mockOrderRepo, mockUserRepo)
+	service := services.NewOrderService(mockOrderRepo, mockUserRepo, testLogger)
 
 	t.Run("Успешное получение заказов", func(t *testing.T) {
 		mockUserRepo.On("FindByID", 1).Return(&models.User{ID: 1}, nil)
@@ -85,20 +85,19 @@ func TestOrderService_GetOrders(t *testing.T) {
 	t.Run("Ошибка репозитория", func(t *testing.T) {
 		mockUserRepo := new(mocks.UserRepository)
 		mockOrderRepo := new(mocks.OrderRepository)
-		service := services.NewOrderService(mockOrderRepo, mockUserRepo)
-
-		// Настраиваем моки
+		service := services.NewOrderService(mockOrderRepo, mockUserRepo, testLogger)
+		
+		// Настройка моков
 		mockUserRepo.On("FindByID", 1).Return(&models.User{ID: 1}, nil)
 		mockOrderRepo.On("GetByUserID", 1).Return([]models.Order{}, errors.New("database error"))
 
-		// Вызываем метод
+		// Вызов метода
 		_, err := service.GetOrders(1)
 
 		// Проверки
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "database error")
+		assert.EqualError(t, err, "database error") // Проверяем точное совпадение
 
-		// Убеждаемся, что все моки вызваны
 		mockUserRepo.AssertExpectations(t)
 		mockOrderRepo.AssertExpectations(t)
 	})

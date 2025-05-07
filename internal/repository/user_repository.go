@@ -30,7 +30,16 @@ func (r *userRepository) Update(user *models.User) error {
 }
 
 func (r *userRepository) Delete(id int) error {
-	return r.db.Delete(&models.User{}, "id = ?", id).Error
+	result := r.db.Delete(&models.User{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
 
 func (r *userRepository) Create(user *models.User) error {

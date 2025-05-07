@@ -6,7 +6,7 @@ import (
 	"KvantTZ/internal/services/mocks"
 	"bytes"
 	"encoding/json"
-	"errors"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -150,7 +150,7 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 	t.Run("Несуществующий пользователь", func(t *testing.T) {
-		mockService.On("DeleteUser", 999).Return(errors.New("not found"))
+		mockService.On("DeleteUser", 999).Return(gorm.ErrRecordNotFound)
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)

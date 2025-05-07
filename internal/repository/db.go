@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -14,8 +13,6 @@ var db *gorm.DB
 
 // InitDB инициализирует и возвращает соединение с базой данных
 func InitDB() (*gorm.DB, error) {
-	// Загрузка .env файла (игнорируем ошибку, если файла нет)
-	_ = godotenv.Load()
 
 	// Валидация обязательных переменных окружения
 	requiredEnv := []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"}

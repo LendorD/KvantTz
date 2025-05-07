@@ -6,29 +6,36 @@ import (
 	"KvantTZ/internal/utils"
 	"errors"
 	"fmt"
+	"log"
 
 	"gorm.io/gorm"
 )
 
 type userService struct {
 	userRepo repository.UserRepository
+	logger   *log.Logger
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
-	return &userService{userRepo: userRepo}
+func NewUserService(userRepo repository.UserRepository, logger *log.Logger) UserService {
+	return &userService{
+		userRepo: userRepo,
+		logger:   logger,
+	}
 }
 
 // Создание нового пользователя
 func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserResponse, error) {
+	s.logger.Printf("[INFO] Создание пользователя: %s", req.Email)
 	err := utils.ValidateCreateRequest(req)
 	if err != nil {
+		s.logger.Printf("[ERROR] Ошибка параметров: %v", err)
 		return nil, errors.New(err.Error())
 	}
 	_, err = s.userRepo.FindByEmail(req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		s.logger.Printf("[ERROR] Ошибка поиска пользователя: %v", err)
 		return nil, err
 	}
-	//Если после поиска по email ошибки нет, значит email уже занят
 	if err == nil {
 		return nil, errors.New("email already exists")
 	}
@@ -47,8 +54,10 @@ func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 	}
 	err = s.userRepo.Create(user)
 	if err != nil {
+		s.logger.Printf("[ERROR] Ошибка создания пользователя: %v", err)
 		return nil, fmt.Errorf("error creating user: %w", err)
 	}
+	s.logger.Printf("[INFO] Пользователь создан : %s", user.Email)
 
 	return &models.UserResponse{
 		ID:    user.ID, // ID автоматически генерируется при сохранении
@@ -60,6 +69,7 @@ func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 
 // Получение всех пользователей с пагинацией и фильтрацией
 func (s *userService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.UserResponse, int64, error) {
+	s.logger.Println("[INFO] Получение всех пользователей")
 	if page < 1 {
 		page = 1
 	}
@@ -67,12 +77,14 @@ func (s *userService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.Use
 		limit = 10
 	}
 	if minAge < 0 || maxAge < 0 || minAge > maxAge {
+		s.logger.Printf("[ERROR] Ошибка параметров при получении пользователй")
 		return nil, 0, errors.New("incorrect data parameters")
 	}
 
 	offset := (page - 1) * limit
 	users, total, err := s.userRepo.GetAll(offset, limit, minAge, maxAge)
 	if err != nil {
+		s.logger.Printf("[ERROR] Ошибка при получении пользователей: %v", err)
 		return nil, 0, err
 	}
 
@@ -90,8 +102,11 @@ func (s *userService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.Use
 
 // Получение пользователя по ID
 func (s *userService) GetUserByID(id int) (*models.UserResponse, error) {
+	s.logger.Printf("[INFO] Получение пользователя по ID: %d ", id)
+
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {
+		s.logger.Printf("[ERROR] Ошибка при получении пользователся по ID: %v ", err)
 		return nil, err
 	}
 	return &models.UserResponse{
@@ -104,11 +119,14 @@ func (s *userService) GetUserByID(id int) (*models.UserResponse, error) {
 
 // Обновление пользователя
 func (s *userService) UpdateUser(id int, req *models.UpdateUserRequest) (*models.UserResponse, error) {
+	s.logger.Printf("[INFO] Обновление данных пользователя c ID: %d ", id)
 	if !utils.IsValidEmail(req.Email) {
+		s.logger.Println("[ERROR] Ошибка при валидации email")
 		return nil, errors.New("invalid email")
 	}
 	user, err := s.userRepo.FindByID(id)
 	if err != nil {
+		s.logger.Printf("[ERROR] Пользователь не найден: %v ", err)
 		return nil, err
 	}
 
@@ -117,6 +135,7 @@ func (s *userService) UpdateUser(id int, req *models.UpdateUserRequest) (*models
 	user.Age = req.Age
 
 	if err := s.userRepo.Update(user); err != nil {
+		s.logger.Printf("[ERROR] Не удалость обновить данные пользователя: %v ", err)
 		return nil, err
 	}
 
@@ -128,9 +147,14 @@ func (s *userService) UpdateUser(id int, req *models.UpdateUserRequest) (*models
 	}, nil
 }
 
-// Удаление пользователя
 func (s *userService) DeleteUser(id int) error {
-	return s.userRepo.Delete(id)
+	s.logger.Printf("[INFO] Удаление пользователя с ID: %d ", id)
+	err := s.userRepo.Delete(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		s.logger.Println("[ERROR] Не удалось найти и удалить пользователя")
+		return err
+	}
+	return err
 }
 
 var _ UserService = (*userService)(nil)

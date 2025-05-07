@@ -13,56 +13,66 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("[INFO] Не найден .env файл, используются системные переменные")
+	}
+
 	db, err := repository.InitDB()
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("[ERROR] Ошибка инициализации БД: ", err)
 	}
-	//err := runMigrations()
-	err = migrations.Migrate(db)
-	if err != nil {
-		log.Fatal("Ошибка миграций: ", err.Error())
-	}
-	err = godotenv.Load()
 
-	// Репозитории
+	if err := migrations.Migrate(db); err != nil {
+		log.Fatal("[ERROR] Ошибка миграций: ", err)
+	}
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 	userRepo := repository.NewUserRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 
-	// Сервисы
-	userService := services.NewUserService(userRepo)
-	orderService := services.NewOrderService(orderRepo, userRepo)
-	authService := services.NewAuthService(userRepo)
-
-	// Хендлеры
-	userHandler := handlers.NewUserHandler(userService)
-	orderHandler := handlers.NewOrderHandler(orderService)
-	authHandler := handlers.NewAuthHandler(authService)
+	userService := services.NewUserService(userRepo, logger)
+	orderService := services.NewOrderService(orderRepo, userRepo, logger)
+	authService := services.NewAuthService(userRepo, logger)
 
 	router := gin.Default()
 
-	// Public routes
-	router.POST("/auth/login", authHandler.Login)
-	router.POST("/users", userHandler.CreateUser)
+	router.Use(middleware.RequestLogger())
 
-	// Protected routes
+	setupPublicRoutes(router, authService, userService)
+
+	setupProtectedRoutes(router, userService, orderService)
+
+	// 6. Запуск сервера
+	port := getPort()
+	log.Printf("[INFO] Сервер запущен на порту :%s", port)
+	if err := router.Run(":" + port); err != nil {
+		log.Fatal("[ERROR] Ошибка запуска сервера: ", err)
+	}
+}
+
+func getPort() string {
+	if port := os.Getenv("APP_PORT"); port != "" {
+		return port
+	}
+	return "8080"
+}
+
+func setupPublicRoutes(router *gin.Engine, authService services.AuthService, userService services.UserService) {
+	router.POST("/auth/login", handlers.NewAuthHandler(authService).Login)
+	router.POST("/users", handlers.NewUserHandler(userService).CreateUser)
+}
+
+func setupProtectedRoutes(router *gin.Engine, userService services.UserService, orderService services.OrderService) {
 	authGroup := router.Group("/")
 	authGroup.Use(middleware.JWTAuth())
 	{
+		// Пользователи
+		authGroup.GET("/users", handlers.NewUserHandler(userService).GetAllUsers)
+		authGroup.GET("/users/:id", handlers.NewUserHandler(userService).GetUserByID)
+		authGroup.PUT("/users/:id", handlers.NewUserHandler(userService).UpdateUser)
+		authGroup.DELETE("/users/:id", handlers.NewUserHandler(userService).DeleteUser)
 
-		authGroup.GET("/users", userHandler.GetAllUsers)
-		authGroup.GET("/users/:id", userHandler.GetUserByID)
-		authGroup.PUT("/users/:id", userHandler.UpdateUser)
-		authGroup.DELETE("/users/:id", userHandler.DeleteUser)
-
-		authGroup.POST("/users/:id/orders", orderHandler.CreateOrder)
-		authGroup.GET("/users/:id/orders", orderHandler.GetOrders)
-
+		// Заказы
+		authGroup.POST("/users/:id/orders", handlers.NewOrderHandler(orderService).CreateOrder)
+		authGroup.GET("/users/:id/orders", handlers.NewOrderHandler(orderService).GetOrders)
 	}
-
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	router.Run(":" + port)
 }

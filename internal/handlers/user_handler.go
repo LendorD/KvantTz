@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"KvantTZ/internal/utils"
+	"errors"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 
@@ -86,7 +88,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	updatedUser, err := h.userService.UpdateUser(id, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -100,15 +102,16 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
 		return
 	}
+
 	err = h.userService.DeleteUser(id)
 	if err != nil {
-		if err.Error() == "not found" {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
-
 	}
+
 	c.Status(http.StatusNoContent)
 }

@@ -5,6 +5,8 @@ import (
 	"KvantTZ/internal/repository/mocks"
 	"KvantTZ/internal/services"
 	"errors"
+	"io"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,9 +14,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var testLogger = log.New(io.Discard, "", 0)
+
 func TestUserService_CreateUser(t *testing.T) {
 	mockRepo := new(mocks.UserRepository)
-	service := services.NewUserService(mockRepo)
+	service := services.NewUserService(mockRepo, testLogger)
 
 	t.Run("Успешное создание пользователя", func(t *testing.T) {
 		req := &models.CreateUserRequest{
@@ -52,7 +56,7 @@ func TestUserService_CreateUser(t *testing.T) {
 
 func TestUserService_GetAllUsers(t *testing.T) {
 	mockRepo := new(mocks.UserRepository)
-	service := services.NewUserService(mockRepo)
+	service := services.NewUserService(mockRepo, testLogger)
 
 	t.Run("Успешное получение списка", func(t *testing.T) {
 		mockRepo.On("GetAll", 0, 10, 0, 0).Return([]models.User{
@@ -69,7 +73,7 @@ func TestUserService_GetAllUsers(t *testing.T) {
 
 func TestUserService_GetUserByID(t *testing.T) {
 	mockRepo := new(mocks.UserRepository)
-	service := services.NewUserService(mockRepo)
+	service := services.NewUserService(mockRepo, testLogger)
 
 	t.Run("Успешное получение пользователя", func(t *testing.T) {
 		mockRepo.On("FindByID", 1).Return(&models.User{
@@ -96,7 +100,7 @@ func TestUserService_GetUserByID(t *testing.T) {
 
 func TestUserService_UpdateUser(t *testing.T) {
 	mockRepo := new(mocks.UserRepository)
-	service := services.NewUserService(mockRepo)
+	service := services.NewUserService(mockRepo, testLogger)
 
 	t.Run("Успешное обновление", func(t *testing.T) {
 		mockRepo.On("FindByID", 1).Return(&models.User{
@@ -125,7 +129,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 func TestUserService_DeleteUser(t *testing.T) {
 	mockRepo := new(mocks.UserRepository)
-	service := services.NewUserService(mockRepo)
+	service := services.NewUserService(mockRepo, testLogger)
 
 	t.Run("Успешное удаление", func(t *testing.T) {
 		mockRepo.On("Delete", 1).Return(nil)
@@ -142,7 +146,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 
 func TestUserService_EdgeCases(t *testing.T) {
 	mockRepo := new(mocks.UserRepository)
-	service := services.NewUserService(mockRepo)
+	service := services.NewUserService(mockRepo, testLogger)
 
 	t.Run("Некорректная пагинация", func(t *testing.T) {
 		_, _, err := service.GetAllUsers(-1, 1000, -5, 200)
