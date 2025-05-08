@@ -19,6 +19,18 @@ func NewOrderHandler(orderService services.OrderService) *OrderHandler {
 	}
 }
 
+// CreateOrder godoc
+// @Summary Создать заказ
+// @Description Создает новый заказ для указанного пользователя
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Param input body models.OrderRequest true "Данные заказа"
+// @Success 201 {object} models.OrderResponse
+// @Failure 400 {object} map[string]string "Неверный ID пользователя или данные заказа"
+// @Failure 404 {object} map[string]string "Пользователь не найден"
+// @Router /users/{id}/orders [post]
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -41,6 +53,16 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	c.JSON(http.StatusCreated, order)
 }
 
+// GetOrders godoc
+// @Summary Получить заказы пользователя
+// @Description Возвращает список всех заказов указанного пользователя
+// @Tags orders
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Success 200 {array} models.OrderResponse
+// @Failure 400 {object} map[string]string "Неверный ID пользователя"
+// @Failure 404 {object} map[string]string "Пользователь не найден"
+// @Router /users/{id}/orders [get]
 func (h *OrderHandler) GetOrders(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

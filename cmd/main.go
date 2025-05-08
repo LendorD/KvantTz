@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "KvantTZ/docs"
 	"KvantTZ/internal/handlers"
 	"KvantTZ/internal/middleware"
 	"KvantTZ/internal/repository"
@@ -8,10 +9,22 @@ import (
 	"KvantTZ/migrations"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
 	"os"
 )
 
+// @title KvantTZ API
+// @version 1.0
+// @description API для управления пользователями и заказами
+// @contact.name API Support
+// @contact.email support@kvanttz.ru
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("[INFO] Не найден .env файл, используются системные переменные")
@@ -34,8 +47,8 @@ func main() {
 	authService := services.NewAuthService(userRepo, logger)
 
 	router := gin.Default()
-
 	router.Use(middleware.RequestLogger())
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	setupPublicRoutes(router, authService, userService)
 

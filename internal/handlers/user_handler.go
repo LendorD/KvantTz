@@ -1,14 +1,14 @@
 package handlers
 
 import (
+	_ "KvantTZ/docs"
+	"KvantTZ/internal/models"
+	"KvantTZ/internal/services"
 	"KvantTZ/internal/utils"
 	"errors"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
-
-	"KvantTZ/internal/models"
-	"KvantTZ/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +21,14 @@ func NewUserHandler(userService services.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
-// POST /users
+// CreateUser godoc
+// @Summary      Создать пользователя
+// @Description  Создает нового пользователя
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        input body models.CreateUserRequest true "Данные пользователя"
+// @Router       /users [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var user models.CreateUserRequest
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -38,7 +45,18 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, createdUser)
 }
 
-// GET /users
+// GetAllUsers godoc
+// @Summary      Получить список пользователей
+// @Description  Возвращает список пользователей с пагинацией и фильтрацией по возрасту
+// @Tags         users
+// @Produce      json
+// @Param        page     query int false "Номер страницы (по умолчанию 1)"
+// @Param        limit    query int false "Лимит элементов на странице (по умолчанию 10)"
+// @Param        min_age  query int false "Минимальный возраст"
+// @Param        max_age  query int false "Максимальный возраст"
+// @Success      200 {object} map[string]interface{} "{"users": [], "total": 0, "page": 0, "limit": 0}"
+// @Failure      500 {object} map[string]string "{"error": "service error"}"
+// @Router       /users [get]
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	page, limit, minAge, maxAge := utils.ValidateListUsersParams(c)
 	users, total, err := h.userService.GetAllUsers(page, limit, minAge, maxAge)
@@ -55,7 +73,16 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	})
 }
 
-// GET /users/:id
+// GetUserByID godoc
+// @Summary      Получить пользователя по ID
+// @Description  Возвращает данные пользователя по указанному ID
+// @Tags         users
+// @Produce      json
+// @Param        id path int true "ID пользователя"
+// @Success      200 {object} models.User
+// @Failure      400 {object} map[string]string "{"error": "invalid user ID"}"
+// @Failure      404 {object} map[string]string "{"error": "user not found"}"
+// @Router       /users/{id} [get]
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -72,7 +99,18 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// PUT /users/:id
+// UpdateUser godoc
+// @Summary      Обновить данные пользователя
+// @Description  Обновляет данные пользователя по указанному ID
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "ID пользователя"
+// @Param        input body models.UpdateUserRequest true "Новые данные пользователя"
+// @Success      200 {object} models.User
+// @Failure      400 {object} map[string]string "{"error": "invalid user ID"}"
+// @Failure      404 {object} map[string]string "{"error": "user not found"}"
+// @Router       /users/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -95,7 +133,16 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, updatedUser)
 }
 
-// DELETE /users/:id
+// DeleteUser godoc
+// @Summary      Удалить пользователя
+// @Description  Удаляет пользователя по указанному ID
+// @Tags         users
+// @Param        id path int true "ID пользователя"
+// @Success      204 "No Content"
+// @Failure      400 {object} map[string]string "{"error": "invalid user ID"}"
+// @Failure      404 {object} map[string]string "{"error": "user not found"}"
+// @Failure      500 {object} map[string]string "{"error": "internal error message"}"
+// @Router       /users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
