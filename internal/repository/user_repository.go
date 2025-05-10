@@ -49,7 +49,6 @@ func (r *userRepository) Create(user *models.User) error {
 func (r *userRepository) GetAll(offset, limit, minAge, maxAge int) ([]models.User, int64, error) {
 	query := r.db.Model(&models.User{})
 
-	// Применяем фильтрацию
 	if minAge > 0 {
 		query = query.Where("age >= ?", minAge)
 	}
@@ -57,13 +56,11 @@ func (r *userRepository) GetAll(offset, limit, minAge, maxAge int) ([]models.Use
 		query = query.Where("age <= ?", maxAge)
 	}
 
-	// Считаем общее количество с учетом фильтров
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Применяем пагинацию
 	var users []models.User
 	if err := query.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
 		return nil, 0, err

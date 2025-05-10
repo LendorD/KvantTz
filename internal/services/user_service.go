@@ -23,7 +23,6 @@ func NewUserService(userRepo repository.UserRepository, logger *log.Logger) User
 	}
 }
 
-// Создание нового пользователя
 func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserResponse, error) {
 	s.logger.Printf("[INFO] Создание пользователя: %s", req.Email)
 	err := utils.ValidateCreateRequest(req)
@@ -32,9 +31,9 @@ func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 		return nil, errors.New(err.Error())
 	}
 	_, err = s.userRepo.FindByEmail(req.Email)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err == nil {
 		s.logger.Printf("[ERROR] Ошибка поиска пользователя: %v", err)
-		return nil, err
+		return nil, errors.New("user already exists")
 	}
 	if err == nil {
 		return nil, errors.New("email already exists")
@@ -45,7 +44,6 @@ func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 		return nil, fmt.Errorf("error hashing password: %w", err)
 	}
 
-	// Создание объекта User из запроса
 	user := &models.User{
 		Name:         req.Name,
 		Email:        req.Email,
@@ -60,14 +58,13 @@ func (s *userService) CreateUser(req *models.CreateUserRequest) (*models.UserRes
 	s.logger.Printf("[INFO] Пользователь создан : %s", user.Email)
 
 	return &models.UserResponse{
-		ID:    user.ID, // ID автоматически генерируется при сохранении
+		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
 		Age:   user.Age,
 	}, nil
 }
 
-// Получение всех пользователей с пагинацией и фильтрацией
 func (s *userService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.UserResponse, int64, error) {
 	s.logger.Println("[INFO] Получение всех пользователей")
 	if page < 1 {
@@ -100,7 +97,6 @@ func (s *userService) GetAllUsers(page, limit, minAge, maxAge int) ([]models.Use
 	return response, total, nil
 }
 
-// Получение пользователя по ID
 func (s *userService) GetUserByID(id int) (*models.UserResponse, error) {
 	s.logger.Printf("[INFO] Получение пользователя по ID: %d ", id)
 
@@ -117,7 +113,6 @@ func (s *userService) GetUserByID(id int) (*models.UserResponse, error) {
 	}, nil
 }
 
-// Обновление пользователя
 func (s *userService) UpdateUser(id int, req *models.UpdateUserRequest) (*models.UserResponse, error) {
 	s.logger.Printf("[INFO] Обновление данных пользователя c ID: %d ", id)
 	if !utils.IsValidEmail(req.Email) {

@@ -20,6 +20,7 @@ func NewOrderHandler(orderService services.OrderService) *OrderHandler {
 }
 
 // CreateOrder godoc
+// @Security ApiKeyAuth
 // @Summary Создать заказ
 // @Description Создает новый заказ для указанного пользователя
 // @Tags orders
@@ -54,6 +55,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 }
 
 // GetOrders godoc
+// @Security ApiKeyAuth
 // @Summary Получить заказы пользователя
 // @Description Возвращает список всех заказов указанного пользователя
 // @Tags orders

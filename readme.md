@@ -43,8 +43,19 @@ cd KvantTZ
 - DB_PORT=5432
 - DB_USER=postgres
 - DB_PASSWORD=root
-DB_NAME=user_orders
-APP_PORT=8080
-JWT_SECRET=your_strong_secret_key
+- DB_NAME=user_orders
+- APP_PORT=8080
+- JWT_SECRET=your_strong_secret_key
 
-### 2. Клонировать репозиторий
+### 2. Запустить докер
+```bash
+docker-compose up --build
+```
+- После запуска документация будет доступна по адресу:
+- http://localhost:8080/swagger/index.html
+
+## 🛠 Тестироваие
+```bash
+  go test -v ./KvzntTZ/internal/services
+  go test -v ./KvzntTZ/internal/handlers
+```

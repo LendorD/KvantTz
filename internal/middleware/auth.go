@@ -17,7 +17,6 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		// сохраняем user_id в контексте
 		c.Set("user_id", userID)
 		c.Next()
 	}

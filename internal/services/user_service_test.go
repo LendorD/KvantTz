@@ -49,7 +49,7 @@ func TestUserService_CreateUser(t *testing.T) {
 
 		_, err := service.CreateUser(req)
 		assert.Error(t, err)
-		assert.Equal(t, "email already exists", err.Error())
+		assert.Equal(t, "user already exists", err.Error())
 		mockRepo.AssertExpectations(t)
 	})
 }

@@ -46,6 +46,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 }
 
 // GetAllUsers godoc
+// @Security ApiKeyAuth
 // @Summary      Получить список пользователей
 // @Description  Возвращает список пользователей с пагинацией и фильтрацией по возрасту
 // @Tags         users
@@ -59,6 +60,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // @Router       /users [get]
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	page, limit, minAge, maxAge := utils.ValidateListUsersParams(c)
+
 	users, total, err := h.userService.GetAllUsers(page, limit, minAge, maxAge)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "service error"})
@@ -74,6 +76,7 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 }
 
 // GetUserByID godoc
+// @Security ApiKeyAuth
 // @Summary      Получить пользователя по ID
 // @Description  Возвращает данные пользователя по указанному ID
 // @Tags         users
@@ -100,6 +103,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 }
 
 // UpdateUser godoc
+// @Security ApiKeyAuth
 // @Summary      Обновить данные пользователя
 // @Description  Обновляет данные пользователя по указанному ID
 // @Tags         users
@@ -134,6 +138,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 }
 
 // DeleteUser godoc
+// @Security ApiKeyAuth
 // @Summary      Удалить пользователя
 // @Description  Удаляет пользователя по указанному ID
 // @Tags         users

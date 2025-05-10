@@ -3,7 +3,7 @@ definitions:
   models.CreateUserRequest:
     properties:
       age:
-        maximum: 150
+        maximum: 100
         minimum: 0
         type: integer
       email:
@@ -16,6 +16,16 @@ definitions:
     - age
     - email
     - name
+    - password
+    type: object
+  models.Credentials:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
     - password
     type: object
   models.OrderRequest:
@@ -74,7 +84,6 @@ definitions:
       name:
         type: string
       password:
-        description: пароль приходит в теле, но не возвращается
         type: string
     required:
     - age
@@ -91,6 +100,42 @@ info:
   title: KvantTZ API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход пользователя и возвращает JWT-токен
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: '{"error": "Email и пароль обязательны"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: '{"error": "Неверные учетные данные"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Аутентификация пользователя
+      tags:
+      - auth
   /users:
     get:
       description: Возвращает список пользователей с пагинацией и фильтрацией по возрасту
@@ -125,6 +170,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Получить список пользователей
       tags:
       - users
@@ -175,6 +222,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Удалить пользователя
       tags:
       - users
@@ -205,6 +254,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Получить пользователя по ID
       tags:
       - users
@@ -243,6 +294,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Обновить данные пользователя
       tags:
       - users
@@ -276,6 +329,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Получить заказы пользователя
       tags:
       - orders
@@ -314,6 +369,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - ApiKeyAuth: []
       summary: Создать заказ
       tags:
       - orders

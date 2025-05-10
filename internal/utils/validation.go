@@ -10,19 +10,16 @@ import (
 	"strconv"
 )
 
-// Хеширование пароля
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }
 
-// Проверка пароля
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
-// Валидация возраста
 func ValidateAge(age int, min, max int) bool {
 	return age >= min && age <= max
 }
@@ -46,43 +43,39 @@ func ValidateCreateRequest(req *models.CreateUserRequest) error {
 }
 
 func ValidateListUsersParams(c *gin.Context) (page, limit, minAge, maxAge int) {
+	// Значения по умолчанию
 	page = 1
 	limit = 10
 	minAge = 0
 	maxAge = 150
 
 	if pageStr := c.Query("page"); pageStr != "" {
-		page, err := strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			page = 1
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
 		}
 	}
 
 	if limitStr := c.Query("limit"); limitStr != "" {
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil || limit < 1 || limit > 100 {
-			limit = 10
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
 		}
 	}
 
-	if minAgeStr := c.Query("minAge"); minAgeStr != "" {
-		minAge, err := strconv.Atoi(minAgeStr)
-		if err != nil || minAge < 0 {
-			minAge = 0
+	if minAgeStr := c.Query("min_age"); minAgeStr != "" {
+		if ma, err := strconv.Atoi(minAgeStr); err == nil && ma >= 0 {
+			minAge = ma
 		}
 	}
 
-	if maxAgeStr := c.Query("maxAge"); maxAgeStr != "" {
-		maxAge, err := strconv.Atoi(maxAgeStr)
-		if err != nil || maxAge < 0 {
-			maxAge = 150
+	if maxAgeStr := c.Query("max_age"); maxAgeStr != "" {
+		if ma, err := strconv.Atoi(maxAgeStr); err == nil && ma >= 0 {
+			maxAge = ma
 		}
 	}
 
 	if minAge > maxAge {
-		minAge = 0
-		maxAge = 100
+		minAge, maxAge = 0, 150
 	}
 
-	return page, limit, minAge, maxAge
+	return
 }

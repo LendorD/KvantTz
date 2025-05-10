@@ -8,13 +8,9 @@ import (
 
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Логирование перед обработкой запроса
 		start := time.Now()
-
-		// Обработка запроса
 		c.Next()
 
-		// Логирование после обработки
 		duration := time.Since(start)
 		log.Printf(
 			"[REQUEST] %s %s - %d (%v)",

@@ -26,6 +26,7 @@ import (
 // @in header
 // @name Authorization
 func main() {
+
 	if err := godotenv.Load(); err != nil {
 		log.Println("[INFO] Не найден .env файл, используются системные переменные")
 	}
@@ -48,13 +49,13 @@ func main() {
 
 	router := gin.Default()
 	router.Use(middleware.RequestLogger())
+
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	setupPublicRoutes(router, authService, userService)
 
 	setupProtectedRoutes(router, userService, orderService)
 
-	// 6. Запуск сервера
 	port := getPort()
 	log.Printf("[INFO] Сервер запущен на порту :%s", port)
 	if err := router.Run(":" + port); err != nil {

@@ -5,7 +5,7 @@ type User struct {
 	Name         string `json:"name"     binding:"required"`
 	Email        string `json:"email"    gorm:"unique" binding:"required,email"`
 	Age          int    `json:"age"      binding:"required,gte=0,lte=150"`
-	PasswordHash string `json:"password" binding:"required"` // пароль приходит в теле, но не возвращается
+	PasswordHash string `json:"password" binding:"required"`
 }
 
 type UserResponse struct {
@@ -18,7 +18,7 @@ type UserResponse struct {
 type CreateUserRequest struct {
 	Name     string `json:"name"     binding:"required"`
 	Email    string `json:"email"    binding:"required,email"`
-	Age      int    `json:"age"      binding:"required,gte=0,lte=150"`
+	Age      int    `json:"age"      binding:"required,gte=0,lte=100"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -26,4 +26,9 @@ type UpdateUserRequest struct {
 	Name  string `json:"name"     binding:"required"`
 	Email string `json:"email"    binding:"required,email"`
 	Age   int    `json:"age"      binding:"required,gte=0,lte=150"`
+}
+
+type Credentials struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
 }
